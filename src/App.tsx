@@ -14,7 +14,8 @@ export default function App() {
   const [locks, setLocks] = useState<boolean[]>([false, false, false, false, false]);
   const [scheme, setScheme] = useState<Scheme>('auto');
   const [mode, setMode] = useState<'palette' | 'gradient'>('palette');
-  const [copied, setCopied] = useState<number | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [angle, setAngle] = useState(120);
 
@@ -35,9 +36,15 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [regen]);
 
-  const copy = (text: string, idx?: number) => {
-    navigator.clipboard?.writeText(text).then(() => { setCopied(idx ?? -1); setTimeout(() => setCopied(null), 1200); }).catch(() => {});
-  };
+  const copy = useCallback((text: string, key?: string, label?: string) => {
+    const k = key ?? 'default';
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(k);
+      setToast(label ?? 'Copied to clipboard');
+      setTimeout(() => setCopied((cur) => (cur === k ? null : cur)), 1200);
+      setTimeout(() => setToast((cur) => (cur === (label ?? 'Copied to clipboard') ? null : cur)), 1600);
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -72,11 +79,11 @@ export default function App() {
                     <button onClick={() => setLocks((l) => l.map((v, j) => (j === i ? !v : v)))} aria-label="Lock" className="rounded-full p-2 transition-colors hover:bg-black/10">
                       {locks[i] ? <LockSimple size={20} weight="fill" /> : <LockSimpleOpen size={20} />}
                     </button>
-                    <button onClick={() => copy(c, i)} aria-label="Copy hex" className="rounded-full p-2 transition-colors hover:bg-black/10">
-                      {copied === i ? <Check size={20} /> : <Copy size={20} />}
+                    <button onClick={() => copy(c, `swatch-${i}`, `${c.toUpperCase()} copied`)} aria-label="Copy hex" className="rounded-full p-2 transition-colors hover:bg-black/10">
+                      {copied === `swatch-${i}` ? <Check size={20} /> : <Copy size={20} />}
                     </button>
                   </div>
-                  <button onClick={() => copy(c, i)} className="font-mono text-lg font-semibold uppercase tracking-wide">{c.replace('#', '')}</button>
+                  <button onClick={() => copy(c, `swatch-${i}`, `${c.toUpperCase()} copied`)} className="font-mono text-lg font-semibold uppercase tracking-wide">{c.replace('#', '')}</button>
                 </div>
                 {locks[i] && <span className="absolute right-3 top-3" style={{ color: readableOn(c) }}><LockSimple size={16} weight="fill" /></span>}
               </div>
@@ -86,6 +93,14 @@ export default function App() {
         </>
       ) : (
         <GradientStudio palette={palette} angle={angle} setAngle={setAngle} copy={copy} copied={copied} />
+      )}
+
+      {toast && (
+        <div className="pointer-events-none fixed bottom-16 left-1/2 z-50 -translate-x-1/2">
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-bg-card/95 px-4 py-2 text-sm text-fg shadow-lg backdrop-blur">
+            <Check size={15} className="text-green-400" /> {toast}
+          </div>
+        </div>
       )}
 
       {/* footer links */}
@@ -102,24 +117,47 @@ export default function App() {
   );
 }
 
-function GradientStudio({ palette, angle, setAngle, copy, copied }: { palette: string[]; angle: number; setAngle: (n: number) => void; copy: (t: string, i?: number) => void; copied: number | null }) {
-  const [a, b] = [palette[1], palette[3]];
+function GradientStudio({ palette, angle, setAngle, copy, copied }: { palette: string[]; angle: number; setAngle: (n: number) => void; copy: (t: string, k?: string, label?: string) => void; copied: string | null }) {
+  const [stopA, setStopA] = useState(1);
+  const [stopB, setStopB] = useState(3);
+  const a = palette[Math.min(stopA, palette.length - 1)];
+  const b = palette[Math.min(stopB, palette.length - 1)];
   const css = `background: linear-gradient(${angle}deg, ${a}, ${b});`;
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1" style={{ background: `linear-gradient(${angle}deg, ${a}, ${b})` }} />
-      <div className="flex flex-col items-center gap-4 border-t border-white/10 bg-bg-soft px-6 py-5">
+      <div className="flex flex-col items-center gap-4 border-t border-white/10 bg-bg-soft px-4 py-5 sm:px-6">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-8">
+          <StopPicker label="From" palette={palette} value={stopA} onChange={setStopA} />
+          <StopPicker label="To" palette={palette} value={stopB} onChange={setStopB} />
+        </div>
         <input type="range" min={0} max={360} value={angle} onChange={(e) => setAngle(Number(e.target.value))} className="w-full max-w-md accent-fg" aria-label="Angle" />
-        <div className="flex items-center gap-3">
-          <code className="rounded-lg border border-white/10 bg-bg px-4 py-2 font-mono text-sm text-fg-mut">{css}</code>
-          <button onClick={() => copy(css)} className="btn-solid">{copied === -1 ? <Check size={16} /> : <Copy size={16} />} Copy</button>
+        <span className="font-mono text-xs text-fg-dim">{angle} deg</span>
+        <div className="flex w-full max-w-xl flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+          <code className="overflow-x-auto rounded-lg border border-white/10 bg-bg px-4 py-2 font-mono text-sm text-fg-mut">{css}</code>
+          <button onClick={() => copy(css, 'grad', 'Gradient CSS copied')} className="btn-solid shrink-0">{copied === 'grad' ? <Check size={16} /> : <Copy size={16} />} Copy</button>
         </div>
       </div>
     </div>
   );
 }
 
-function ExportModal({ palette, onClose, copy, copied }: { palette: string[]; onClose: () => void; copy: (t: string, i?: number) => void; copied: number | null }) {
+function StopPicker({ label, palette, value, onChange }: { label: string; palette: string[]; value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs uppercase tracking-wider text-fg-mut">{label}</span>
+      <div className="flex gap-1.5">
+        {palette.map((c, i) => (
+          <button key={i} onClick={() => onChange(i)} aria-label={`${label} ${c}`}
+            className={`h-6 w-6 rounded-md transition-transform hover:scale-110 ${value === i ? 'ring-2 ring-fg ring-offset-2 ring-offset-bg-soft' : 'ring-1 ring-white/10'}`}
+            style={{ background: c }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ExportModal({ palette, onClose, copy, copied }: { palette: string[]; onClose: () => void; copy: (t: string, k?: string, label?: string) => void; copied: string | null }) {
   const blocks: [string, string][] = [
     ['CSS variables', exporters.css(palette)],
     ['Tailwind', exporters.tailwind(palette)],
@@ -133,15 +171,20 @@ function ExportModal({ palette, onClose, copy, copied }: { palette: string[]; on
         <button onClick={onClose} className="absolute right-4 top-4 text-fg-mut hover:text-fg"><X size={20} /></button>
         <h3 className="text-lg font-semibold">Export palette</h3>
         <div className="mt-4 space-y-4">
-          {blocks.map(([label, code]) => (
-            <div key={label}>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wider text-fg-mut">{label}</span>
-                <button onClick={() => copy(code)} className="text-xs text-fg-mut hover:text-fg">{copied === -1 ? 'copied' : 'copy'}</button>
+          {blocks.map(([label, code]) => {
+            const key = `export-${label}`;
+            return (
+              <div key={label}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wider text-fg-mut">{label}</span>
+                  <button onClick={() => copy(code, key, `${label} copied`)} className="flex items-center gap-1 text-xs text-fg-mut hover:text-fg">
+                    {copied === key ? <><Check size={12} /> copied</> : <><Copy size={12} /> copy</>}
+                  </button>
+                </div>
+                <pre className="overflow-x-auto rounded-lg border border-white/10 bg-bg px-3 py-2 font-mono text-xs text-fg-mut">{code}</pre>
               </div>
-              <pre className="overflow-x-auto rounded-lg border border-white/10 bg-bg px-3 py-2 font-mono text-xs text-fg-mut">{code}</pre>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
