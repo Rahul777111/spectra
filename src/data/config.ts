@@ -5,5 +5,5 @@ export const LINKS = {
   tip: (env.VITE_TIP_URL as string) || 'https://www.buymeacoffee.com/spectra',
   gear: (env.VITE_AFF_GEAR as string) || '#',
   twitter: (env.VITE_TWITTER_URL as string) || 'https://twitter.com/spectraapp',
-  github: (env.VITE_GITHUB_URL as string) || 'https://github.com/spectra-app/spectra',
+  github: (env.VITE_GITHUB_URL as string) || 'https://github.com/Rahul777111/spectra',
 };
