@@ -6,7 +6,7 @@ Generate beautiful color palettes and CSS gradients right in your browser. Lock 
 like, hit space to regenerate the rest, and copy everything as CSS variables, a Tailwind config or
 JSON. Share any palette with a link.
 
-**[ Live ](https://spectra.vercel.app)**
+**[ Live ](https://spectra-ten-olive.vercel.app)**
 
 ![Spectra](docs/og.jpg)
 
@@ -18,6 +18,7 @@ JSON. Share any palette with a link.
 - Export as CSS variables, Tailwind config, JSON, or a share URL
 - A gradient studio with a live angle control and copyable CSS
 - Palettes live in the URL, so sharing is just copying the link
+- An interactive 3D palette orb (Three.js) you can spin, with a one-tap 3D toggle and copy toasts
 
 ## Make money with it
 See [ACTIVATE.md](ACTIVATE.md).
