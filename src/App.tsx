@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { LockSimple, LockSimpleOpen, Copy, Check, ArrowsClockwise, Export, X, GithubLogo, Coffee } from '@phosphor-icons/react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { LockSimple, LockSimpleOpen, Copy, Check, ArrowsClockwise, Export, X, GithubLogo, Coffee, Cube } from '@phosphor-icons/react';
 import { generate, readableOn, exporters, SCHEMES, type Scheme } from './lib/color';
 import { LINKS, SITE } from './data/config';
+
+const PaletteOrb = lazy(() => import('./components/PaletteOrb').then((m) => ({ default: m.PaletteOrb })));
 
 function fromHash(): string[] | null {
   const h = window.location.hash.replace('#', '');
@@ -18,6 +20,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [angle, setAngle] = useState(120);
+  const [showOrb, setShowOrb] = useState(false);
 
   useEffect(() => {
     window.location.hash = palette.map((c) => c.replace('#', '')).join('-');
@@ -64,6 +67,11 @@ export default function App() {
               {SCHEMES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
+          {mode === 'palette' && (
+            <button onClick={() => setShowOrb((v) => !v)} aria-pressed={showOrb} className={`btn-ghost ${showOrb ? 'border-white/30 text-fg' : ''}`}>
+              <Cube size={16} /> <span className="hidden sm:inline">3D</span>
+            </button>
+          )}
           <button onClick={() => setExportOpen(true)} className="btn-ghost"><Export size={16} /> <span className="hidden sm:inline">Export</span></button>
           {mode === 'palette' && <button onClick={regen} className="btn-solid"><ArrowsClockwise size={16} /> <span className="hidden sm:inline">Generate</span></button>}
         </div>
@@ -90,6 +98,22 @@ export default function App() {
             ))}
           </div>
           <p className="border-t border-white/10 py-2 text-center text-xs text-fg-dim">press <span className="chip mx-1">space</span> to generate · click a colour to copy · lock the ones you like</p>
+          {showOrb && (
+            <div className="fixed bottom-20 right-4 z-30 w-44 sm:bottom-24 sm:right-6 sm:w-56">
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-bg-card/80 shadow-2xl backdrop-blur">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="text-xs uppercase tracking-wider text-fg-mut">3D preview</span>
+                  <button onClick={() => setShowOrb(false)} aria-label="Hide 3D preview" className="text-fg-mut hover:text-fg"><X size={14} /></button>
+                </div>
+                <div className="h-40 w-full sm:h-52">
+                  <Suspense fallback={<div className="h-full w-full animate-pulse bg-white/5" />}>
+                    <PaletteOrb palette={palette} />
+                  </Suspense>
+                </div>
+                <p className="px-3 pb-2 text-center text-[10px] text-fg-dim">drag to rotate</p>
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <GradientStudio palette={palette} angle={angle} setAngle={setAngle} copy={copy} copied={copied} />
