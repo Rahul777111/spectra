@@ -20,12 +20,6 @@ JSON. Share any palette with a link.
 - Palettes live in the URL, so sharing is just copying the link
 - An interactive 3D palette orb (Three.js) you can spin, with a one-tap 3D toggle and copy toasts
 
-## Make money with it
-See [ACTIVATE.md](ACTIVATE.md).
-- **Tips** from designers and developers (`VITE_TIP_URL`).
-- **Affiliate** to design tools and courses (`VITE_AFF_GEAR`).
-- Later: Pro palette packs and saved collections (`VITE_PRO_CHECKOUT`).
-
 ## Tech
 React + TypeScript + Vite + Tailwind. Client-side, ~69 KB gzipped. Zero-config Vercel deploy.
 
